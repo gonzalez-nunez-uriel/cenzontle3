@@ -14,4 +14,8 @@ defmodule Cenzontle3 do
 
   TDD requires that you have a clear idea what the architecture of the app is. I don't have that right now.
   """
+
+  def on_watchlist_processed(pid, registry) do
+    GenServer.cast(pid, {:watchlist_processed, registry})
+  end
 end
