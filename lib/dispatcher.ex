@@ -40,7 +40,7 @@ defmodule Dispatcher do
 
   def handle_cast({:begin, sup_pid}, {watchlist, registry}) do
     # There needs to be a way to notify the user that there is some error with the URL that is registered in the watchlist
-    filtered_watchlist = Enum.filter(watchlist, &URL.is_valid?/1)
+    filtered_watchlist = URL.get_watchlist_w_domains(watchlist)
     registry = dispatch_watchlist(filtered_watchlist, registry)
     # HOW DO I SHUT IT DOWN?!?!?!?!?!?!?!?
     # Maybe let the supevisor know so that it can shut it down
@@ -55,9 +55,7 @@ defmodule Dispatcher do
     registry
   end
 
-  def dispatch_watchlist([authorpage | rest], registry) do
-    domain = URL.get_domain()
-
+  def dispatch_watchlist([{domain, authorpage} | rest], registry) do
     new_registry =
       case Map.get(registry, domain) do
         # Broker for that domain is not   in the registry
