@@ -39,9 +39,7 @@ defmodule Dispatcher do
   end
 
   def handle_cast({:begin, sup_pid}, {watchlist, registry}) do
-    # There needs to be a way to notify the user that there is some error with the URL that is registered in the watchlist
-    filtered_watchlist = URL.get_watchlist_w_domains(watchlist)
-    registry = dispatch_watchlist(filtered_watchlist, registry)
+    registry = dispatch_watchlist(sup_pid, watchlist, registry)
     # HOW DO I SHUT IT DOWN?!?!?!?!?!?!?!?
     # Maybe let the supevisor know so that it can shut it down
     Cenzontle3.on_watchlist_processed(sup_pid, registry)
@@ -50,17 +48,19 @@ defmodule Dispatcher do
     {:noreply, []}
   end
 
-  def dispatch_watchlist([], registry) do
+  def dispatch_watchlist(_sup_pid, [], registry) do
     # Not necesarry. For the sake of testing
+    # Maybe useful. Cenzontle can shut down the processes once they are done
     registry
   end
 
-  def dispatch_watchlist([{domain, authorpage} | rest], registry) do
+  def dispatch_watchlist(sup_pid, [{domain, authorpage} | rest], registry) do
     new_registry =
       case Map.get(registry, domain) do
-        # Broker for that domain is not   in the registry
+        # Broker for that domain is not in the registry
         nil ->
-          new_broker = Broker.start(domain, authorpage)
+          new_broker = Broker.start(domain, sup_pid)
+          Broker.process(new_broker, authorpage)
           Map.put(domain, new_broker)
 
         broker ->
@@ -68,6 +68,6 @@ defmodule Dispatcher do
           registry
       end
 
-    dispatch_watchlist(rest, new_registry)
+    dispatch_watchlist(sup_pid, rest, new_registry)
   end
 end
