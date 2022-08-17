@@ -61,7 +61,7 @@ defmodule Dispatcher do
         nil ->
           new_broker = Broker.start(domain, sup_pid)
           Broker.process(new_broker, authorpage)
-          Map.put(domain, new_broker)
+          Map.put(registry, domain, new_broker)
 
         broker ->
           Broker.process(broker, authorpage)
