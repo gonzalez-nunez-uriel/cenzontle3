@@ -7,4 +7,23 @@ defmodule Broker do
   1. visiting each post, extracting the information, and storing the information in files
 
   """
+
+  @broker_registry %{
+    "stackoverflow.com" => "StackOverflow",
+    "hover.blog" => "Hover",
+    "blog.appsignal.com" => "AppSignal",
+    "www.reddit.com" => "Reddit",
+    "devrant.com" => "DevRant"
+  }
+
+  # ~ DON'T FORGET THAT THE BROKER NEEDS TO REPORT BACK ONCE IT IS DONE
+
+  def start(domain, sup_pid) do
+    module = Map.get(@broker_registry, domain)
+    apply(String.to_atom("Elixir.Broker." <> module), :start, [sup_pid])
+  end
+
+  def process(broker_pid, authorpage) do
+    GenServer.cast(broker_pid, {:process, authorpage})
+  end
 end
