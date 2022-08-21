@@ -39,7 +39,8 @@ defmodule Dispatcher do
   end
 
   def handle_cast({:begin, sup_pid}, {watchlist, registry}) do
-    registry = dispatch_watchlist(sup_pid, watchlist, registry)
+    preprocessed_watchlist = URL.make_watchlist_w_domains(watchlist)
+    registry = dispatch_watchlist(sup_pid, preprocessed_watchlist, registry)
     # HOW DO I SHUT IT DOWN?!?!?!?!?!?!?!?
     # Maybe let the supevisor know so that it can shut it down
     Cenzontle3.on_watchlist_processed(sup_pid, registry)
@@ -54,6 +55,13 @@ defmodule Dispatcher do
     registry
   end
 
+  # Cases to watch out for. I'll leave these here for now.
+  # hover.blog
+  # hover.com
+  # blog.stackovirflow.com
+  # youtube.com
+  # www.youtube.com
+  # music.youtube.com
   def dispatch_watchlist(sup_pid, [{domain, authorpage} | rest], registry) do
     new_registry =
       case Map.get(registry, domain) do
