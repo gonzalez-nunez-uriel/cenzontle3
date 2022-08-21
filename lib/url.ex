@@ -9,7 +9,7 @@ defmodule URL do
   # Instead Optional binary, Optional binary, binary, binary, Optional binary, Optional binary
   defstruct protocol: nil, domain: nil, path: nil, params: nil
 
-  def get_watchlist_w_domains([authorpage, rest], processed_watchlist \\ []) do
+  def make_watchlist_w_domains([authorpage, rest], processed_watchlist \\ []) do
     new_processed_watchlist =
       case make_URL(authorpage) do
         # This is not possible because the watchlist only contains valid URLs. Soft ignore
@@ -22,61 +22,59 @@ defmodule URL do
           [{domain, authorpage} | processed_watchlist]
       end
 
-    get_watchlist_w_domains(rest, new_processed_watchlist)
+    make_watchlist_w_domains(rest, new_processed_watchlist)
   end
 
   # There is no need to implement is_valid? because if that is the case, it returns an error
   def make_URL(url) do
-    case extract_protocol(url) do
+    case extract_protocol_and_more(url) do
       :error ->
         :error
 
-      [domain, path, params, protocol] ->
+      {protocol, domain, path, params} ->
         {:ok, %URL{protocol: protocol, domain: domain, path: path, params: params}}
     end
   end
 
-  def extract_protocol(url) do
+  def extract_protocol_and_more(url) do
     case String.split(url, "://") do
       # without protocol
-      [x] -> extract_params([nil], x)
+      [x] -> extract_params(nil, x)
       # with protocol
-      [protocol, x] -> extract_params([protocol], x)
+      [protocol, x] -> extract_params(protocol, x)
       # multiple protocol delimeters. Multiple urls in one line?
       _ -> :error
     end
   end
 
-  def extract_params(acc, url) do
+  def extract_params(protocol, url) do
     case String.split(url, "?", parts: 2) do
       # without params
-      [x] -> extract_resource_path([nil | acc], x)
+      [x] -> extract_resource_path(nil, protocol, x)
       # missing a domain
       ["", _params] -> :error
       # Trailing '?'. Super weird case
-      [x, ""] -> extract_resource_path([nil | acc], x)
+      [x, ""] -> extract_resource_path(nil, protocol, x)
       # with params
-      [x, params] -> extract_resource_path([params | acc], x)
+      [x, params] -> extract_resource_path(params, protocol, x)
     end
   end
 
-  def extract_resource_path(acc, url) do
+  def extract_resource_path(params, protocol, url) do
     case String.split(url, "/", parts: 2) do
       # without path
-      [domain] -> extract_domain([nil | acc], domain)
+      [domain] -> extract_domain(nil, params, protocol, domain)
       # missing domain
       ["", _path] -> :error
       # Trailing '/'. Common case
-      [domain, ""] -> extract_domain([nil | acc], domain)
+      [domain, ""] -> extract_domain(nil, params, protocol, domain)
       # with path
-      [domain, path] -> extract_domain([path | acc], domain)
+      [domain, path] -> extract_domain(path, params, protocol, domain)
     end
   end
 
-  def extract_domain(acc, domain) do
+  def extract_domain(path, params, protocol, domain) do
     # validation on domain
-    [domain | acc]
+    {protocol, domain, path, params}
   end
-
-  # def is_valid?(%URL{} = url)
 end
